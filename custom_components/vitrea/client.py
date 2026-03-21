@@ -1,13 +1,13 @@
 import asyncio
 import logging
 from dataclasses import dataclass, field
-from typing import Callable
+from typing import Callable, Optional
 
 _LOGGER = logging.getLogger(__name__)
 
 PREFIX = bytes([0x56, 0x54, 0x55])
-DIR_OUTGOING = 0x30
-DIR_INCOMING = 0x31
+DIR_OUTGOING = 0x3E
+DIR_INCOMING = 0x3C
 
 CMD_ACK = 0x00
 CMD_LOGIN = 0x01
@@ -96,7 +96,7 @@ class VitreaClient:
         buf.append(checksum)
         return msg_id, bytes(buf)
 
-    async def _send_command(self, command_id: int, data: bytes = b"", wait_cmd: bool = False) -> bytes | None:
+    async def _send_command(self, command_id: int, data: bytes = b"", wait_cmd: bool = False) -> Optional[bytes]:
         msg_id, raw = self._build_message(command_id, data)
         fut: asyncio.Future[bytes] = asyncio.get_running_loop().create_future()
         if wait_cmd:
