@@ -1,0 +1,22 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Vitrea Smart Home",
+        "data": {
+          "host": "Host",
+          "port": "Port",
+          "username": "Username",
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect",
+      "invalid_auth": "Invalid authentication"
+    },
+    "abort": {
+      "already_configured": "Already configured"
+    }
+  }
+}
