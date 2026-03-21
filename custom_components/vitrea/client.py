@@ -108,14 +108,14 @@ class VitreaClient:
         return await asyncio.wait_for(fut, timeout=10.0)
 
     async def connect(self) -> None:
-        _LOGGER.debug("Vitrea: opening TCP connection to %s:%s", self._host, self._port)
+        _LOGGER.error("Vitrea: opening TCP connection to %s:%s", self._host, self._port)
         self._reader, self._writer = await asyncio.open_connection(self._host, self._port)
         self._reader_task = asyncio.ensure_future(self._reader_loop())
-        _LOGGER.debug("Vitrea: TCP connected, sending heartbeat")
+        _LOGGER.error("Vitrea: TCP connected, sending heartbeat")
         await self._send_command(CMD_HEARTBEAT)
-        _LOGGER.debug("Vitrea: heartbeat OK, sending login")
+        _LOGGER.error("Vitrea: heartbeat OK, sending login")
         await self.login()
-        _LOGGER.debug("Vitrea: login OK, starting heartbeat loop")
+        _LOGGER.error("Vitrea: login OK, starting heartbeat loop")
         self._heartbeat_task = asyncio.ensure_future(self._heartbeat_loop())
 
     async def disconnect(self) -> None:
