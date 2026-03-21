@@ -1,3 +1,4 @@
+import asyncio
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_USERNAME, CONF_PASSWORD
@@ -31,6 +32,8 @@ class VitreaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 await client.connect()
                 await client.disconnect()
+            except (OSError, asyncio.TimeoutError):
+                errors["base"] = "cannot_connect"
             except Exception:
                 errors["base"] = "cannot_connect"
             else:

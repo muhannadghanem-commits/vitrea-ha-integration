@@ -95,7 +95,7 @@ class VitreaClient:
 
     async def _send_command(self, command_id: int, data: bytes = b"", wait_cmd: bool = False) -> bytes | None:
         msg_id, raw = self._build_message(command_id, data)
-        fut: asyncio.Future[bytes] = asyncio.get_event_loop().create_future()
+        fut: asyncio.Future[bytes] = asyncio.get_running_loop().create_future()
         if wait_cmd:
             self._cmd_pending[command_id] = fut
         else:
