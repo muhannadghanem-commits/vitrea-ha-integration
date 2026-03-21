@@ -1,6 +1,9 @@
 import asyncio
+import logging
 from dataclasses import dataclass, field
 from typing import Callable
+
+_LOGGER = logging.getLogger(__name__)
 
 PREFIX = bytes([0x56, 0x54, 0x55])
 DIR_OUTGOING = 0x30
@@ -102,13 +105,17 @@ class VitreaClient:
             self._pending[msg_id] = fut
         self._writer.write(raw)
         await self._writer.drain()
-        return await asyncio.wait_for(fut, timeout=5.0)
+        return await asyncio.wait_for(fut, timeout=10.0)
 
     async def connect(self) -> None:
+        _LOGGER.debug("Vitrea: opening TCP connection to %s:%s", self._host, self._port)
         self._reader, self._writer = await asyncio.open_connection(self._host, self._port)
         self._reader_task = asyncio.ensure_future(self._reader_loop())
+        _LOGGER.debug("Vitrea: TCP connected, sending heartbeat")
         await self._send_command(CMD_HEARTBEAT)
+        _LOGGER.debug("Vitrea: heartbeat OK, sending login")
         await self.login()
+        _LOGGER.debug("Vitrea: login OK, starting heartbeat loop")
         self._heartbeat_task = asyncio.ensure_future(self._heartbeat_loop())
 
     async def disconnect(self) -> None:
