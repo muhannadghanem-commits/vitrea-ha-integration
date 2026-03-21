@@ -217,11 +217,14 @@ class VitreaClient:
         resp = await self._send_command(CMD_NODE_METADATA, bytes([node_id]), wait_cmd=True)
         nid = resp[8]
         mac = ":".join(f"{b:02X}" for b in resp[9:17])
-        total_keys = resp[18]
+        node_type = resp[18]
+        total_keys = resp[19]
         keys = []
         for i in range(total_keys):
-            keys.append({"id": i, "type": resp[19 + i]})
-        offset_start = 19 + total_keys
+            idx = 20 + i
+            if idx < len(resp) - 1:
+                keys.append({"id": i, "type": resp[idx]})
+        offset_start = 20 + total_keys
         room_id = resp[offset_start + 7] if offset_start + 7 < len(resp) - 1 else 0
         return NodeMetaData(id=nid, room_id=room_id, mac_address=mac, total_keys=total_keys, keys_list=keys)
 
