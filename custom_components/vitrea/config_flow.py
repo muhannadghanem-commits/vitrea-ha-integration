@@ -1,10 +1,13 @@
 import asyncio
+import logging
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_USERNAME, CONF_PASSWORD
 
 from .const import DOMAIN, DEFAULT_PORT
 from .client import VitreaClient
+
+_LOGGER = logging.getLogger(__name__)
 
 DATA_SCHEMA = vol.Schema({
     vol.Required(CONF_HOST): str,
@@ -32,9 +35,11 @@ class VitreaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 await client.connect()
                 await client.disconnect()
-            except (OSError, asyncio.TimeoutError):
+            except (OSError, asyncio.TimeoutError) as err:
+                _LOGGER.error("Vitrea connection failed: %s: %s", type(err).__name__, err)
                 errors["base"] = "cannot_connect"
-            except Exception:
+            except Exception as err:
+                _LOGGER.error("Vitrea unexpected error: %s: %s", type(err).__name__, err)
                 errors["base"] = "cannot_connect"
             else:
                 return self.async_create_entry(
