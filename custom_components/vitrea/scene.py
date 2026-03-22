@@ -3,7 +3,6 @@ import re
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.components.scene import Scene
 
 from .const import DOMAIN, KEY_TYPE_SCENARIO
@@ -30,14 +29,8 @@ class VitreaScene(Scene):
         self._node_id = device["node_id"]
         self._key_id = key["id"]
         self._attr_unique_id = f"vitrea_{device['node_id']}_{key['id']}"
-        self._attr_has_entity_name = True
         self._attr_name = key.get("name") or f"{device.get('room_name', '')} Key {key['id']}"
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, f"vitrea_room_{device['room_id']}")},
-            name=device.get("room_name", f"Vitrea Room {device['room_id']}"),
-            manufacturer="Vitrea",
-            suggested_area=device.get("room_name", ""),
-        )
+        self._room_name = device.get("room_name", "")
         name_str = key.get("name", "")
         if re.match(r"^N\d+-\d+$", name_str) or "Pair" in name_str:
             self._attr_entity_registry_enabled_default = False

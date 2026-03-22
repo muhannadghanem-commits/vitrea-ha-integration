@@ -1,6 +1,5 @@
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.components.cover import CoverEntity, CoverEntityFeature, ATTR_POSITION
 
@@ -36,14 +35,8 @@ class VitreaCover(CoverEntity):
         self._key_id = key["id"]
         self._position = 0
         self._attr_unique_id = f"vitrea_{device['node_id']}_{key['id']}"
-        self._attr_has_entity_name = True
         self._attr_name = key.get("name") or f"{device.get('room_name', '')} Key {key['id']}"
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, f"vitrea_room_{device['room_id']}")},
-            name=device.get("room_name", f"Vitrea Room {device['room_id']}"),
-            manufacturer="Vitrea",
-            suggested_area=device.get("room_name", ""),
-        )
+        self._room_name = device.get("room_name", "")
         self._attr_supported_features = (
             CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE | CoverEntityFeature.SET_POSITION
         )

@@ -4,7 +4,6 @@ from typing import Optional
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback, CALLBACK_TYPE
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.event import async_call_later
 from homeassistant.components.switch import SwitchEntity
 
@@ -44,14 +43,8 @@ class VitreaSwitch(SwitchEntity):
         self._timer_remaining = 0
         self._timer_cancel: Optional[CALLBACK_TYPE] = None
         self._attr_unique_id = f"vitrea_{device['node_id']}_{key['id']}"
-        self._attr_has_entity_name = True
         self._attr_name = key.get("name") or f"{device.get('room_name', '')} Key {key['id']}"
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, f"vitrea_room_{device['room_id']}")},
-            name=device.get("room_name", f"Vitrea Room {device['room_id']}"),
-            manufacturer="Vitrea",
-            suggested_area=device.get("room_name", ""),
-        )
+        self._room_name = device.get("room_name", "")
         name_str = key.get("name", "")
         if re.match(r"^N\d+-\d+$", name_str) or "Pair" in name_str:
             self._attr_entity_registry_enabled_default = False
