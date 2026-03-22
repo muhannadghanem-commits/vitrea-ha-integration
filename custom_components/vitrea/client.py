@@ -293,4 +293,4 @@ class VitreaClient:
                 })
             except Exception:
                 pass
-        return devices
+        return {"devices": devices, "rooms": rooms}
