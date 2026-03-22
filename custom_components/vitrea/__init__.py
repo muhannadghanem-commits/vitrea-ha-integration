@@ -45,7 +45,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 floor_entry = floor_reg.async_get_floor_by_name(fname)
                 if not floor_entry:
                     try:
-                        floor_entry = floor_reg.async_create(fname, level=fid)
+                        floor_entry = floor_reg.async_create(fname)
                     except ValueError:
                         floor_entry = floor_reg.async_get_floor_by_name(fname)
                 if floor_entry:
