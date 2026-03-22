@@ -1,9 +1,14 @@
+import logging
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_USERNAME, CONF_PASSWORD
+from homeassistant.helpers import area_registry as ar, floor_registry as fr
 
-from .const import DOMAIN, PLATFORMS
+from .const import DOMAIN, PLATFORMS, FLOOR_NAMES
 from .client import VitreaClient
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -15,6 +20,35 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
     await client.connect()
     devices = await client.discover_devices()
+
+    try:
+        floor_reg = fr.async_get(hass)
+        area_reg = ar.async_get(hass)
+
+        floor_map = {}
+        seen_rooms = {}
+        for dev in devices:
+            fid = dev.get("floor_id", 0)
+            if fid not in floor_map:
+                fname = FLOOR_NAMES.get(fid, f"Floor {fid}")
+                floor_entry = floor_reg.async_get_floor_by_name(fname)
+                if not floor_entry:
+                    try:
+                        floor_entry = floor_reg.async_create(fname, level=fid)
+                    except ValueError:
+                        floor_entry = floor_reg.async_get_floor_by_name(fname)
+                if floor_entry:
+                    floor_map[fid] = floor_entry.floor_id
+
+            rid = dev.get("room_id", 0)
+            rname = dev.get("room_name", "")
+            if rname and rid not in seen_rooms and fid in floor_map:
+                area_entry = area_reg.async_get_or_create(rname)
+                area_reg.async_update(area_entry.id, floor_id=floor_map[fid])
+                seen_rooms[rid] = True
+    except Exception:
+        _LOGGER.warning("Failed to create floor/area hierarchy", exc_info=True)
+
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = {
         "client": client,

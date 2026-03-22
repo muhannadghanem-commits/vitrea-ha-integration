@@ -51,6 +51,7 @@ class NodeMetaData:
 class RoomMetaData:
     id: int = 0
     name: str = ""
+    floor_id: int = 0
 
 
 @dataclass
@@ -231,9 +232,10 @@ class VitreaClient:
     async def get_room_metadata(self, room_id: int) -> RoomMetaData:
         resp = await self._send_command(CMD_ROOM_METADATA, bytes([room_id]), wait_cmd=True)
         rid = resp[8]
+        floor_id = resp[9]
         name_bytes = resp[11:-1]
         name = name_bytes.decode("utf-16-le", errors="replace").rstrip("\x00")
-        return RoomMetaData(id=rid, name=name)
+        return RoomMetaData(id=rid, name=name, floor_id=floor_id)
 
     async def get_key_status(self, node_id: int, key_id: int) -> KeyStatusResponse:
         resp = await self._send_command(CMD_KEY_STATUS, bytes([node_id, key_id]), wait_cmd=True)
@@ -270,20 +272,21 @@ class VitreaClient:
         for i in range(1, room_count + 1):
             try:
                 rm = await self.get_room_metadata(i)
-                rooms[rm.id] = rm.name
+                rooms[rm.id] = {"name": rm.name, "floor_id": rm.floor_id}
             except Exception:
                 pass
         devices = []
         for i in range(1, count + 1):
             try:
                 node = await self.get_node_metadata(i)
-                room_name = rooms.get(node.room_id, "")
+                room_data = rooms.get(node.room_id, {"name": "", "floor_id": 0})
                 for key in node.keys_list:
                     key["name"] = await self.get_key_name(node.id, key["id"])
                 devices.append({
                     "node_id": node.id,
                     "room_id": node.room_id,
-                    "room_name": room_name,
+                    "room_name": room_data["name"],
+                    "floor_id": room_data["floor_id"],
                     "mac_address": node.mac_address,
                     "total_keys": node.total_keys,
                     "keys": node.keys_list,
