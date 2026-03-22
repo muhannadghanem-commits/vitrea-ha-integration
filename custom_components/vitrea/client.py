@@ -273,7 +273,7 @@ class VitreaClient:
             try:
                 rm = await self.get_room_metadata(i)
                 rooms[rm.id] = {"name": rm.name, "floor_id": rm.floor_id}
-            except Exception:
+            except (Exception, asyncio.CancelledError):
                 pass
         devices = []
         for i in range(1, count + 1):
@@ -291,6 +291,6 @@ class VitreaClient:
                     "total_keys": node.total_keys,
                     "keys": node.keys_list,
                 })
-            except Exception:
+            except (Exception, asyncio.CancelledError):
                 pass
         return {"devices": devices, "rooms": rooms}
