@@ -2,6 +2,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.components.light import LightEntity, ColorMode, ATTR_BRIGHTNESS
+from homeassistant.helpers.entity import DeviceInfo
 
 from .const import DOMAIN
 from .client import (
@@ -41,7 +42,14 @@ class VitreaLight(LightEntity):
         self._is_on = False
         self._brightness = 0
         self._attr_unique_id = f"vitrea_{device['node_id']}_{key['id']}"
-        self._attr_name = f"Vitrea Node {device['node_id']} Key {key['id']}"
+        self._attr_has_entity_name = True
+        self._attr_name = key.get("name") or f"{device.get('room_name', '')} Key {key['id']}"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, f"vitrea_room_{device['room_id']}")},
+            name=device.get("room_name", f"Vitrea Room {device['room_id']}"),
+            manufacturer="Vitrea",
+            suggested_area=device.get("room_name", ""),
+        )
 
     @property
     def color_mode(self) -> ColorMode:

@@ -67,14 +67,14 @@ class VitreaClient:
         self._port = port
         self._username = username
         self._password = password
-        self._reader: asyncio.StreamReader | None = None
-        self._writer: asyncio.StreamWriter | None = None
+        self._reader: Optional[asyncio.StreamReader] = None
+        self._writer: Optional[asyncio.StreamWriter] = None
         self._msg_id = 0
         self._buffer = bytearray()
         self._pending: dict[int, asyncio.Future] = {}
         self._cmd_pending: dict[int, asyncio.Future] = {}
-        self._heartbeat_task: asyncio.Task | None = None
-        self._reader_task: asyncio.Task | None = None
+        self._heartbeat_task: Optional[asyncio.Task] = None
+        self._reader_task: Optional[asyncio.Task] = None
         self._key_status_callbacks: list[Callable] = []
 
     def _next_msg_id(self) -> int:
@@ -244,6 +244,16 @@ class VitreaClient:
             is_on=resp[10] == KEY_ON,
         )
 
+    async def get_key_name(self, node_id: int, key_id: int) -> str:
+        try:
+            resp = await self._send_command(CMD_KEY_PARAMETERS, bytes([node_id, key_id]), wait_cmd=True)
+            name_len = resp[20]
+            if name_len > 0 and 21 + name_len <= len(resp) - 1:
+                return resp[21:21 + name_len].decode("utf-16-le", errors="replace").rstrip("\x00")
+        except Exception:
+            pass
+        return ""
+
     async def toggle_key(self, node_id: int, key_id: int, power: int, dimmer: int = 0) -> None:
         timer_high = 0
         timer_low = 0
@@ -253,16 +263,31 @@ class VitreaClient:
     def on_key_status(self, callback: Callable) -> None:
         self._key_status_callbacks.append(callback)
 
-    async def discover_devices(self) -> list[dict]:
+    async def discover_devices(self) -> list:
         count = await self.get_node_count()
+        room_count = await self.get_room_count()
+        rooms = {}
+        for i in range(1, room_count + 1):
+            try:
+                rm = await self.get_room_metadata(i)
+                rooms[rm.id] = rm.name
+            except Exception:
+                pass
         devices = []
         for i in range(1, count + 1):
-            node = await self.get_node_metadata(i)
-            devices.append({
-                "node_id": node.id,
-                "room_id": node.room_id,
-                "mac_address": node.mac_address,
-                "total_keys": node.total_keys,
-                "keys": node.keys_list,
-            })
+            try:
+                node = await self.get_node_metadata(i)
+                room_name = rooms.get(node.room_id, "")
+                for key in node.keys_list:
+                    key["name"] = await self.get_key_name(node.id, key["id"])
+                devices.append({
+                    "node_id": node.id,
+                    "room_id": node.room_id,
+                    "room_name": room_name,
+                    "mac_address": node.mac_address,
+                    "total_keys": node.total_keys,
+                    "keys": node.keys_list,
+                })
+            except Exception:
+                pass
         return devices
