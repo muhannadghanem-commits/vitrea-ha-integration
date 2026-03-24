@@ -270,27 +270,33 @@ class VitreaClient:
         room_count = await self.get_room_count()
         rooms = {}
         for i in range(1, room_count + 1):
-            try:
-                rm = await self.get_room_metadata(i)
-                rooms[rm.id] = {"name": rm.name, "floor_id": rm.floor_id}
-            except (Exception, asyncio.CancelledError):
-                pass
+            for attempt in range(3):
+                try:
+                    rm = await self.get_room_metadata(i)
+                    rooms[rm.id] = {"name": rm.name, "floor_id": rm.floor_id}
+                    break
+                except (Exception, asyncio.CancelledError):
+                    if attempt < 2:
+                        await asyncio.sleep(0.5)
         devices = []
         for i in range(1, count + 1):
-            try:
-                node = await self.get_node_metadata(i)
-                room_data = rooms.get(node.room_id, {"name": "", "floor_id": 0})
-                for key in node.keys_list:
-                    key["name"] = await self.get_key_name(node.id, key["id"])
-                devices.append({
-                    "node_id": node.id,
-                    "room_id": node.room_id,
-                    "room_name": room_data["name"],
-                    "floor_id": room_data["floor_id"],
-                    "mac_address": node.mac_address,
-                    "total_keys": node.total_keys,
-                    "keys": node.keys_list,
-                })
-            except (Exception, asyncio.CancelledError):
-                pass
+            for attempt in range(3):
+                try:
+                    node = await self.get_node_metadata(i)
+                    room_data = rooms.get(node.room_id, {"name": "", "floor_id": 0})
+                    for key in node.keys_list:
+                        key["name"] = await self.get_key_name(node.id, key["id"])
+                    devices.append({
+                        "node_id": node.id,
+                        "room_id": node.room_id,
+                        "room_name": room_data["name"],
+                        "floor_id": room_data["floor_id"],
+                        "mac_address": node.mac_address,
+                        "total_keys": node.total_keys,
+                        "keys": node.keys_list,
+                    })
+                    break
+                except (Exception, asyncio.CancelledError):
+                    if attempt < 2:
+                        await asyncio.sleep(0.5)
         return {"devices": devices, "rooms": rooms}

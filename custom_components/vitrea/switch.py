@@ -46,7 +46,7 @@ class VitreaSwitch(SwitchEntity):
         self._attr_name = key.get("name") or f"{device.get('room_name', '')} Key {key['id']}"
         self._room_name = device.get("room_name", "")
         name_str = key.get("name", "")
-        if re.match(r"^N\d+-\d+$", name_str) or "Pair" in name_str:
+        if re.match(r"^N\d+-\d+$", name_str) or "Pair" in name_str or name_str.endswith(" MW"):
             self._attr_entity_registry_enabled_default = False
 
     @property

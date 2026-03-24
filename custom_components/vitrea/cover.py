@@ -1,3 +1,5 @@
+import re
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -40,6 +42,9 @@ class VitreaCover(CoverEntity):
         self._attr_supported_features = (
             CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE | CoverEntityFeature.SET_POSITION
         )
+        name_str = key.get("name", "")
+        if re.match(r"^N\d+-\d+$", name_str) or "Pair" in name_str or name_str.endswith(" MW"):
+            self._attr_entity_registry_enabled_default = False
 
     @property
     def is_closed(self) -> bool:
