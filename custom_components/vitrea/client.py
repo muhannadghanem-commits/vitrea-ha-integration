@@ -128,6 +128,10 @@ class VitreaClient:
             self._reader_task = None
         if self._writer:
             self._writer.close()
+            try:
+                await self._writer.wait_closed()
+            except (Exception, asyncio.CancelledError):
+                pass
             self._writer = None
         self._reader = None
         self._buffer.clear()

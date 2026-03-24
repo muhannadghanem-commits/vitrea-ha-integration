@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 from homeassistant.config_entries import ConfigEntry
@@ -18,6 +19,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         entry.data[CONF_USERNAME],
         entry.data[CONF_PASSWORD],
     )
+    await asyncio.sleep(1)  # Allow VBox Pro to release config flow connection
     await client.connect()
     result = await client.discover_devices()
     devices = result["devices"]
