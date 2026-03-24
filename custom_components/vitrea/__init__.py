@@ -100,7 +100,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         area_lookup = {}
         for area in area_reg.async_list_areas():
             area_lookup[area.name] = area.id
-        # Assign areas to entities
+        # Assign areas to entities (only if not already assigned)
         for uid, rname in uid_to_room.items():
             area_id = area_lookup.get(rname)
             if not area_id:
@@ -108,7 +108,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             for platform in PLATFORMS:
                 entity_id = ent_reg.async_get_entity_id(platform, DOMAIN, uid)
                 if entity_id:
-                    ent_reg.async_update_entity(entity_id, area_id=area_id)
+                    entry = ent_reg.async_get(entity_id)
+                    if entry and not entry.area_id:
+                        ent_reg.async_update_entity(entity_id, area_id=area_id)
     except Exception:
         _LOGGER.warning("Failed to assign entity areas", exc_info=True)
 
