@@ -281,7 +281,7 @@ class VitreaClient:
                     break
                 except (Exception, asyncio.CancelledError):
                     if attempt < 2:
-                        await asyncio.sleep(0.5)
+                        await asyncio.sleep(1)
         devices = []
         for i in range(1, count + 1):
             for attempt in range(3):
@@ -302,5 +302,5 @@ class VitreaClient:
                     break
                 except (Exception, asyncio.CancelledError):
                     if attempt < 2:
-                        await asyncio.sleep(0.5)
+                        await asyncio.sleep(1)
         return {"devices": devices, "rooms": rooms}
