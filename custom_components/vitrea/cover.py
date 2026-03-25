@@ -1,3 +1,4 @@
+import logging
 import re
 
 from homeassistant.config_entries import ConfigEntry
@@ -11,6 +12,8 @@ from .client import (
     KEY_ON, KEY_OFF,
     KEY_TYPE_BLIND, KEY_TYPE_BLIND_MW,
 )
+
+_LOGGER = logging.getLogger(__name__)
 
 BLIND_TYPES = {KEY_TYPE_BLIND, KEY_TYPE_BLIND_MW}
 
@@ -76,10 +79,13 @@ class VitreaCover(CoverEntity):
     @callback
     def _handle_status_update(self, status: KeyStatusResponse) -> None:
         if status.node_id == self._node_id and status.key_id == self._key_id:
+            old_pos = self._position
             if status.power == KEY_ON:
                 self._position = 100
             elif status.power == KEY_OFF:
                 self._position = 0
             else:
                 self._position = status.power
+            if old_pos != self._position:
+                _LOGGER.warning("Vitrea cover %s_%s: %s -> %s (power=0x%02X)", self._node_id, self._key_id, old_pos, self._position, status.power)
             self.async_write_ha_state()
