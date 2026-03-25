@@ -16,13 +16,16 @@ SKIP_POLL_TYPES = {KEY_TYPE_NOT_EXIST, KEY_TYPE_NOT_ACTIVE, 12}  # skip inactive
 
 
 async def _poll_loop(client, devices, stop_event):
-    """Poll all active keys and fire push callbacks. Excludes blinds (not trackable)."""
+    """Poll all active keys and fire push callbacks."""
     poll_keys = []
     for dev in devices:
         for key in dev.get("keys", []):
             if key["type"] not in SKIP_POLL_TYPES:
                 poll_keys.append((dev["node_id"], key["id"]))
+    _LOGGER.warning("Vitrea poll: %d keys to poll, %d callbacks registered", len(poll_keys), len(client._key_status_callbacks))
     while not stop_event.is_set():
+        polled = 0
+        errors = 0
         for node_id, key_id in poll_keys:
             if stop_event.is_set():
                 break
@@ -30,8 +33,10 @@ async def _poll_loop(client, devices, stop_event):
                 status = await client.get_key_status(node_id, key_id)
                 for cb in client._key_status_callbacks:
                     cb(status)
+                polled += 1
             except (Exception, asyncio.CancelledError):
-                pass
+                errors += 1
+        _LOGGER.warning("Vitrea poll cycle: %d polled, %d errors, %d callbacks", polled, errors, len(client._key_status_callbacks))
         try:
             await asyncio.wait_for(stop_event.wait(), timeout=POLL_INTERVAL)
         except asyncio.TimeoutError:
