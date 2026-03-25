@@ -8,19 +8,20 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import area_registry as ar, entity_registry as er
 
 from .const import DOMAIN, PLATFORMS, POLL_INTERVAL
-from .client import VitreaClient, KEY_TYPE_NOT_EXIST, KEY_TYPE_NOT_ACTIVE
+from .client import VitreaClient, KEY_TYPE_NOT_EXIST, KEY_TYPE_NOT_ACTIVE, KEY_TYPE_BLIND, KEY_TYPE_BLIND_MW
 
 _LOGGER = logging.getLogger(__name__)
 
 SKIP_TYPES = {KEY_TYPE_NOT_EXIST, KEY_TYPE_NOT_ACTIVE}
+SKIP_POLL_TYPES = {KEY_TYPE_NOT_EXIST, KEY_TYPE_NOT_ACTIVE, KEY_TYPE_BLIND, KEY_TYPE_BLIND_MW, 12}
 
 
 async def _poll_loop(client, devices, stop_event):
-    """Poll all active keys and fire push callbacks."""
+    """Poll all active keys and fire push callbacks. Excludes blinds (not trackable)."""
     poll_keys = []
     for dev in devices:
         for key in dev.get("keys", []):
-            if key["type"] not in SKIP_TYPES:
+            if key["type"] not in SKIP_POLL_TYPES:
                 poll_keys.append((dev["node_id"], key["id"]))
     while not stop_event.is_set():
         for node_id, key_id in poll_keys:
