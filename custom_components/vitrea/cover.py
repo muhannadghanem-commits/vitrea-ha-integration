@@ -1,19 +1,16 @@
-import logging
 import re
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.components.cover import CoverEntity, CoverEntityFeature, ATTR_POSITION
 
 from .const import DOMAIN
 from .client import (
-    VitreaClient, KeyStatusResponse,
+    VitreaClient,
     KEY_ON, KEY_OFF,
     KEY_TYPE_BLIND, KEY_TYPE_BLIND_MW,
 )
-
-_LOGGER = logging.getLogger(__name__)
 
 BLIND_TYPES = {KEY_TYPE_BLIND, KEY_TYPE_BLIND_MW}
 
@@ -72,19 +69,3 @@ class VitreaCover(CoverEntity):
         await self._client.toggle_key(self._node_id, self._key_id, KEY_ON, position)
         self._position = position
         self.async_write_ha_state()
-
-    async def async_added_to_hass(self) -> None:
-        self._client.on_key_status(self._handle_status_update)
-
-    @callback
-    def _handle_status_update(self, status: KeyStatusResponse) -> None:
-        if status.node_id == self._node_id and status.key_id == self._key_id:
-            old_pos = self._position
-            if status.power == KEY_ON:
-                self._position = 100
-            elif status.power == KEY_OFF:
-                self._position = 0
-            else:
-                self._position = status.power
-            _LOGGER.warning("Vitrea cover %s_%s: pos %s->%s power=0x%02X", self._node_id, self._key_id, old_pos, self._position, status.power)
-            self.async_write_ha_state()
