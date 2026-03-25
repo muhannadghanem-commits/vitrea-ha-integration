@@ -100,7 +100,12 @@ class VitreaLight(LightEntity):
             return
         self._is_on = status.is_on
         if self._key_type in DIMMER_KEY_TYPES:
-            self._brightness = round(status.power * 255 / 100)
+            if status.power == KEY_ON:
+                self._brightness = 255
+            elif status.power == KEY_OFF:
+                self._brightness = 0
+            else:
+                self._brightness = round(status.power * 255 / 100)
         else:
             self._brightness = 255 if status.is_on else 0
         self.async_write_ha_state()

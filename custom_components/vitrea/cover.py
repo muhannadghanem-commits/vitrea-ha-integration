@@ -76,5 +76,10 @@ class VitreaCover(CoverEntity):
     @callback
     def _handle_status_update(self, status: KeyStatusResponse) -> None:
         if status.node_id == self._node_id and status.key_id == self._key_id:
-            self._position = status.power
+            if status.power == KEY_ON:
+                self._position = 100
+            elif status.power == KEY_OFF:
+                self._position = 0
+            else:
+                self._position = status.power
             self.async_write_ha_state()
