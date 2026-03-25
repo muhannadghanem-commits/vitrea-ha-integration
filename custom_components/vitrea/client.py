@@ -116,9 +116,7 @@ class VitreaClient:
         await self._send_command(CMD_HEARTBEAT)
         _LOGGER.error("Vitrea: heartbeat OK, sending login")
         await self.login()
-        _LOGGER.error("Vitrea: login OK, subscribing to status updates")
-        await self._send_command(CMD_INTERNAL_UNIT_STATUSES)
-        _LOGGER.error("Vitrea: subscribed, starting heartbeat loop")
+        _LOGGER.error("Vitrea: login OK, starting heartbeat loop")
         self._heartbeat_task = asyncio.ensure_future(self._heartbeat_loop())
 
     async def disconnect(self) -> None:

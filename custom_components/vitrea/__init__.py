@@ -6,10 +6,35 @@ from homeassistant.core import HomeAssistant
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_USERNAME, CONF_PASSWORD
 from homeassistant.helpers import area_registry as ar, entity_registry as er
 
-from .const import DOMAIN, PLATFORMS
-from .client import VitreaClient
+from .const import DOMAIN, PLATFORMS, POLL_INTERVAL
+from .client import VitreaClient, KEY_TYPE_NOT_EXIST, KEY_TYPE_NOT_ACTIVE
 
 _LOGGER = logging.getLogger(__name__)
+
+SKIP_TYPES = {KEY_TYPE_NOT_EXIST, KEY_TYPE_NOT_ACTIVE}
+
+
+async def _poll_loop(client, devices, stop_event):
+    """Poll all active keys and fire push callbacks."""
+    poll_keys = []
+    for dev in devices:
+        for key in dev.get("keys", []):
+            if key["type"] not in SKIP_TYPES:
+                poll_keys.append((dev["node_id"], key["id"]))
+    while not stop_event.is_set():
+        for node_id, key_id in poll_keys:
+            if stop_event.is_set():
+                break
+            try:
+                status = await client.get_key_status(node_id, key_id)
+                for cb in client._key_status_callbacks:
+                    cb(status)
+            except (Exception, asyncio.CancelledError):
+                pass
+        try:
+            await asyncio.wait_for(stop_event.wait(), timeout=POLL_INTERVAL)
+        except asyncio.TimeoutError:
+            pass
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -25,9 +50,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     devices = result["devices"]
 
     hass.data.setdefault(DOMAIN, {})
+    stop_event = asyncio.Event()
+    poll_task = asyncio.ensure_future(_poll_loop(client, devices, stop_event))
     hass.data[DOMAIN][entry.entry_id] = {
         "client": client,
         "devices": devices,
+        "poll_task": poll_task,
+        "stop_event": stop_event,
     }
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
@@ -65,5 +94,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         data = hass.data[DOMAIN].pop(entry.entry_id)
+        data["stop_event"].set()
+        data["poll_task"].cancel()
         await data["client"].disconnect()
     return unload_ok
