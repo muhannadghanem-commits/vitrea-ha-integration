@@ -86,6 +86,5 @@ class VitreaCover(CoverEntity):
                 self._position = 0
             else:
                 self._position = status.power
-            if old_pos != self._position:
-                _LOGGER.warning("Vitrea cover %s_%s: %s -> %s (power=0x%02X)", self._node_id, self._key_id, old_pos, self._position, status.power)
+            _LOGGER.warning("Vitrea cover %s_%s: pos %s->%s power=0x%02X", self._node_id, self._key_id, old_pos, self._position, status.power)
             self.async_write_ha_state()
