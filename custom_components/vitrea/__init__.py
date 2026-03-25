@@ -31,6 +31,8 @@ async def _poll_loop(client, devices, stop_event):
                 break
             try:
                 status = await client.get_key_status(node_id, key_id)
+                if key_id in (0, 2) and node_id == 42:
+                    _LOGGER.warning("Vitrea poll raw: req node=%d key=%d -> resp node=%d key=%d power=0x%02X", node_id, key_id, status.node_id, status.key_id, status.power)
                 for cb in client._key_status_callbacks:
                     cb(status)
                 polled += 1
