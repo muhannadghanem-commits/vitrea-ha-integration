@@ -36,6 +36,7 @@ async def _poll_loop(client, devices, stop_event):
                 polled += 1
             except (Exception, asyncio.CancelledError):
                 errors += 1
+            await asyncio.sleep(0.05)  # 50ms between polls
         _LOGGER.warning("Vitrea poll cycle: %d polled, %d errors, %d callbacks", polled, errors, len(client._key_status_callbacks))
         try:
             await asyncio.wait_for(stop_event.wait(), timeout=POLL_INTERVAL)
