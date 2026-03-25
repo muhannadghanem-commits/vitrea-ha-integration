@@ -8,12 +8,11 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import area_registry as ar, entity_registry as er
 
 from .const import DOMAIN, PLATFORMS, POLL_INTERVAL
-from .client import VitreaClient, KEY_TYPE_NOT_EXIST, KEY_TYPE_NOT_ACTIVE, KEY_TYPE_BLIND, KEY_TYPE_BLIND_MW
+from .client import VitreaClient, KEY_TYPE_NOT_EXIST, KEY_TYPE_NOT_ACTIVE
 
 _LOGGER = logging.getLogger(__name__)
 
-SKIP_TYPES = {KEY_TYPE_NOT_EXIST, KEY_TYPE_NOT_ACTIVE}
-SKIP_POLL_TYPES = {KEY_TYPE_NOT_EXIST, KEY_TYPE_NOT_ACTIVE, KEY_TYPE_BLIND, KEY_TYPE_BLIND_MW, 12}
+SKIP_POLL_TYPES = {KEY_TYPE_NOT_EXIST, KEY_TYPE_NOT_ACTIVE, 12}  # skip inactive + scenes
 
 
 async def _poll_loop(client, devices, stop_event):
