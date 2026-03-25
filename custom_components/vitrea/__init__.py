@@ -4,6 +4,7 @@ import logging
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_USERNAME, CONF_PASSWORD
+from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import area_registry as ar, entity_registry as er
 
 from .const import DOMAIN, PLATFORMS, POLL_INTERVAL
@@ -44,10 +45,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         entry.data[CONF_USERNAME],
         entry.data[CONF_PASSWORD],
     )
-    await asyncio.sleep(1)  # Allow VBox Pro to release config flow connection
-    await client.connect()
-    result = await client.discover_devices()
-    devices = result["devices"]
+    try:
+        await asyncio.sleep(1)  # Allow VBox Pro to release config flow connection
+        await client.connect()
+        result = await client.discover_devices()
+        devices = result["devices"]
+    except Exception as err:
+        _LOGGER.error("Vitrea: failed to connect: %s", err)
+        raise ConfigEntryNotReady(f"Cannot connect to VBox Pro: {err}") from err
 
     hass.data.setdefault(DOMAIN, {})
     stop_event = asyncio.Event()
