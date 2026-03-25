@@ -16,30 +16,26 @@ SKIP_POLL_TYPES = {KEY_TYPE_NOT_EXIST, KEY_TYPE_NOT_ACTIVE, 12}  # skip inactive
 
 
 async def _poll_loop(client, devices, stop_event):
-    """Poll all active keys and fire push callbacks."""
+    """Poll all active keys. Responses handled by _dispatch via push callbacks."""
     poll_keys = []
     for dev in devices:
         for key in dev.get("keys", []):
             if key["type"] not in SKIP_POLL_TYPES:
                 poll_keys.append((dev["node_id"], key["id"]))
-    _LOGGER.warning("Vitrea poll: %d keys to poll, %d callbacks registered", len(poll_keys), len(client._key_status_callbacks))
+    _LOGGER.warning("Vitrea poll: %d keys to poll", len(poll_keys))
     while not stop_event.is_set():
-        polled = 0
-        errors = 0
         for node_id, key_id in poll_keys:
             if stop_event.is_set():
                 break
             try:
-                status = await client.get_key_status(node_id, key_id)
-                if key_id in (0, 2) and node_id == 42:
-                    _LOGGER.warning("Vitrea poll raw: req node=%d key=%d -> resp node=%d key=%d power=0x%02X", node_id, key_id, status.node_id, status.key_id, status.power)
-                for cb in client._key_status_callbacks:
-                    cb(status)
-                polled += 1
+                await client.poll_key_status(node_id, key_id)
+                await asyncio.sleep(0.1)  # 100ms between polls for VBox Pro to respond
             except (Exception, asyncio.CancelledError):
-                errors += 1
-            await asyncio.sleep(0.05)  # 50ms between polls
-        _LOGGER.warning("Vitrea poll cycle: %d polled, %d errors, %d callbacks", polled, errors, len(client._key_status_callbacks))
+                pass
+        try:
+            await asyncio.wait_for(stop_event.wait(), timeout=POLL_INTERVAL)
+        except asyncio.TimeoutError:
+            pass
         try:
             await asyncio.wait_for(stop_event.wait(), timeout=POLL_INTERVAL)
         except asyncio.TimeoutError:

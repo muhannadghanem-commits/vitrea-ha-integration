@@ -250,6 +250,12 @@ class VitreaClient:
             is_on=resp[10] == KEY_ON,
         )
 
+    async def poll_key_status(self, node_id: int, key_id: int) -> None:
+        """Send key status request. Response handled by _dispatch via push callbacks."""
+        _, raw = self._build_message(CMD_KEY_STATUS, bytes([node_id, key_id]))
+        self._writer.write(raw)
+        await self._writer.drain()
+
     async def get_key_name(self, node_id: int, key_id: int) -> str:
         try:
             resp = await self._send_command(CMD_KEY_PARAMETERS, bytes([node_id, key_id]), wait_cmd=True)
