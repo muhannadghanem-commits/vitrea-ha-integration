@@ -56,14 +56,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data.setdefault(DOMAIN, {})
     stop_event = asyncio.Event()
-    poll_task = asyncio.ensure_future(_poll_loop(client, devices, stop_event))
     hass.data[DOMAIN][entry.entry_id] = {
         "client": client,
         "devices": devices,
-        "poll_task": poll_task,
         "stop_event": stop_event,
     }
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    # Start polling AFTER platforms register their callbacks
+    poll_task = asyncio.ensure_future(_poll_loop(client, devices, stop_event))
+    hass.data[DOMAIN][entry.entry_id]["poll_task"] = poll_task
 
     # Assign entities to existing HA areas (only if not already assigned)
     try:
